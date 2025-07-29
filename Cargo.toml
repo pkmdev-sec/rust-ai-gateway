@@ -14,7 +14,7 @@ rand = "0.8"
 thiserror = "1.0"
 tokio = { version = "1.0", features = ["full"], optional = true }
 reqwest = { version = "0.11", features = ["json"], optional = true }
-axum = { version = "0.7", optional = true }
+axum = { version = "0.7", features = ["macros"], optional = true }
 tower = { version = "0.4", optional = true }
 tower-http = { version = "0.5", features = ["cors"], optional = true }
 uuid = { version = "1.0", features = ["v4"], optional = true }
@@ -23,7 +23,7 @@ napi = { version = "2.0", optional = true }
 napi-derive = { version = "2.0", optional = true }
 
 [features]
-default = ["async", "simple"]
+default = ["async", "simple", "uuid"]
 async = ["tokio", "reqwest"]
 simple = []
 server = ["async", "axum", "tower", "tower-http", "uuid", "chrono"]
@@ -36,3 +36,8 @@ crate-type = ["cdylib", "rlib"]
 [dev-dependencies]
 tokio-test = "0.4"
 clap = { version = "4.0", features = ["derive"] }
+
+[[bin]]
+name = "intelligent-server"
+path = "src/bin/intelligent-server.rs"
+required-features = ["server"]

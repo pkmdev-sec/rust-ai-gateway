@@ -5,6 +5,9 @@ pub mod error;
 pub mod retry;
 pub mod guardrails;
 pub mod multimodal;
+pub mod enterprise;
+pub mod models;
+pub mod intelligent_router;
 
 pub fn greet() {
     println!("Hello from Pure Rust AI Gateway!");
@@ -26,6 +29,8 @@ pub use error::*;
 pub use retry::*;
 pub use guardrails::*;
 pub use multimodal::*;
+pub use models::*;
+pub use intelligent_router::*;
 
 #[cfg(feature = "simple")]
 pub use simple::*;

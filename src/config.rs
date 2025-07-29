@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::{RetryConfig, GuardrailConfig, ModelCapabilities};
+use crate::{RetryConfig, GuardrailConfig};
+use crate::multimodal::ModelCapabilities;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]

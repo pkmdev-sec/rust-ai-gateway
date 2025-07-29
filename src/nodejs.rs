@@ -53,17 +53,16 @@ impl NodeAIGateway {
 }
 
 #[napi]
-pub fn create_config_from_portkey(portkey_config: String) -> Result<String> {
-    let portkey_value: Value = serde_json::from_str(&portkey_config)
-        .map_err(|e| Error::new(Status::InvalidArg, format!("Invalid Portkey config: {}", e)))?;
-
-    let config = convert_portkey_to_rust_config(portkey_value)?;
+pub fn create_config_from_json(json_config: String) -> Result<String> {
+    let json_value: Value = serde_json::from_str(&json_config)
+        .map_err(|e| Error::new(Status::InvalidArg, format!("Invalid JSON config: {}", e)))?;
     
+    let config = convert_json_to_rust_config(json_value)?;    
     serde_json::to_string(&config)
         .map_err(|e| Error::new(Status::GenericFailure, format!("Serialization failed: {}", e)))
 }
 
-fn convert_portkey_to_rust_config(portkey: Value) -> Result<RouterConfig> {
+fn convert_json_to_rust_config(json_config: Value) -> Result<RouterConfig> {
     let mut config = RouterConfig {
         mode: StrategyMode::Single,
         targets: Vec::new(),
@@ -76,9 +75,9 @@ fn convert_portkey_to_rust_config(portkey: Value) -> Result<RouterConfig> {
     };
 
     // Handle single provider case
-    if let Some(provider_name) = portkey.get("provider").and_then(|p| p.as_str()) {
-        let api_key = portkey.get("apiKey")
-            .or_else(|| portkey.get("api_key"))
+    if let Some(provider_name) = json_config.get("provider").and_then(|p| p.as_str()) {
+        let api_key = json_config.get("apiKey")
+            .or_else(|| json_config.get("api_key"))
             .and_then(|k| k.as_str())
             .unwrap_or_default();
 
@@ -99,7 +98,7 @@ fn convert_portkey_to_rust_config(portkey: Value) -> Result<RouterConfig> {
     }
 
     // Handle targets case (multiple providers with strategies)
-    if let Some(targets) = portkey.get("targets").and_then(|t| t.as_array()) {
+    if let Some(targets) = json_config.get("targets").and_then(|t| t.as_array()) {
         let mut rust_targets = Vec::new();
 
         for target in targets {
@@ -128,7 +127,7 @@ fn convert_portkey_to_rust_config(portkey: Value) -> Result<RouterConfig> {
         config.targets = rust_targets;
 
         // Handle strategy
-        if let Some(strategy) = portkey.get("strategy") {
+        if let Some(strategy) = json_config.get("strategy") {
             if let Some(mode) = strategy.get("mode").and_then(|m| m.as_str()) {
                 config.mode = match mode {
                     "loadbalance" => StrategyMode::LoadBalance,
@@ -144,8 +143,8 @@ fn convert_portkey_to_rust_config(portkey: Value) -> Result<RouterConfig> {
 }
 
 #[napi]
-pub fn route_with_portkey_config(portkey_config: String, message: String, metadata: Option<String>) -> Result<String> {
-    let config_str = create_config_from_portkey(portkey_config)?;
+pub fn route_with_json_config(json_config: String, message: String, metadata: Option<String>) -> Result<String> {
+    let config_str = create_config_from_json(json_config)?;
     let config: RouterConfig = serde_json::from_str(&config_str)
         .map_err(|e| Error::new(Status::InvalidArg, format!("Invalid config: {}", e)))?;
 
