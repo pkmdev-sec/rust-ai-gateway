@@ -1,0 +1,63 @@
+[
+  {
+    "scenario_name": "Single Provider (OpenAI)",
+    "total_requests": 5,
+    "successful_requests": 5,
+    "failed_requests": 0,
+    "success_rate": 100.0,
+    "avg_total_latency_ms": 631.8,
+    "avg_routing_latency_ns": 8308.4,
+    "min_total_latency_ms": 548.0,
+    "max_total_latency_ms": 717.0,
+    "provider_distribution": {
+      "openai": 5
+    },
+    "routing_overhead_percent": 0.0013150364039252926
+  },
+  {
+    "scenario_name": "Single Provider (Anthropic)",
+    "total_requests": 5,
+    "successful_requests": 5,
+    "failed_requests": 0,
+    "success_rate": 100.0,
+    "avg_total_latency_ms": 714.8,
+    "avg_routing_latency_ns": 2125.0,
+    "min_total_latency_ms": 564.0,
+    "max_total_latency_ms": 986.0,
+    "provider_distribution": {
+      "anthropic": 5
+    },
+    "routing_overhead_percent": 0.00029728595411303863
+  },
+  {
+    "scenario_name": "Load Balance (OpenAI 70% / Anthropic 30%)",
+    "total_requests": 5,
+    "successful_requests": 5,
+    "failed_requests": 0,
+    "success_rate": 100.0,
+    "avg_total_latency_ms": 698.2,
+    "avg_routing_latency_ns": 4475.0,
+    "min_total_latency_ms": 520.0,
+    "max_total_latency_ms": 1236.0,
+    "provider_distribution": {
+      "openai": 3,
+      "anthropic": 2
+    },
+    "routing_overhead_percent": 0.000640933829848181
+  },
+  {
+    "scenario_name": "Conditional Routing (High Priority → Anthropic)",
+    "total_requests": 5,
+    "successful_requests": 5,
+    "failed_requests": 0,
+    "success_rate": 100.0,
+    "avg_total_latency_ms": 733.8,
+    "avg_routing_latency_ns": 4883.2,
+    "min_total_latency_ms": 614.0,
+    "max_total_latency_ms": 944.0,
+    "provider_distribution": {
+      "anthropic": 5
+    },
+    "routing_overhead_percent": 0.0006654674298173889
+  }
+]

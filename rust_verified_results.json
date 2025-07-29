@@ -1,0 +1,58 @@
+[
+  {
+    "scenario_name": "Single Provider (OpenAI)",
+    "test_type": "Routing Performance",
+    "iterations": 50000,
+    "total_time_ms": 14.0,
+    "success_rate": 100.0,
+    "avg_latency_ns": 103.4331,
+    "min_latency_ns": 0,
+    "max_latency_ns": 10750,
+    "p95_latency_ns": 125,
+    "p99_latency_ns": 167,
+    "throughput_req_per_sec": 3472483.623072737,
+    "statistical_confidence": "Very High (±<1%)"
+  },
+  {
+    "scenario_name": "Load Balance (OpenAI 70% / Anthropic 30%)",
+    "test_type": "Routing Performance",
+    "iterations": 50000,
+    "total_time_ms": 16.0,
+    "success_rate": 100.0,
+    "avg_latency_ns": 137.6774,
+    "min_latency_ns": 41,
+    "max_latency_ns": 46208,
+    "p95_latency_ns": 167,
+    "p99_latency_ns": 625,
+    "throughput_req_per_sec": 3116834.4780739113,
+    "statistical_confidence": "High (±1.6%)"
+  },
+  {
+    "scenario_name": "Conditional Routing (High Priority → Anthropic)",
+    "test_type": "Routing Performance",
+    "iterations": 50000,
+    "total_time_ms": 21.0,
+    "success_rate": 100.0,
+    "avg_latency_ns": 268.25586,
+    "min_latency_ns": 166,
+    "max_latency_ns": 13875,
+    "p95_latency_ns": 292,
+    "p99_latency_ns": 334,
+    "throughput_req_per_sec": 2300962.0644526165,
+    "statistical_confidence": "Very High (±<1%)"
+  },
+  {
+    "scenario_name": "Stress Test (1M operations)",
+    "test_type": "Stress Test",
+    "iterations": 1000000,
+    "total_time_ms": 94.0,
+    "success_rate": 100.0,
+    "avg_latency_ns": 94.39775,
+    "min_latency_ns": 0,
+    "max_latency_ns": 0,
+    "p95_latency_ns": 0,
+    "p99_latency_ns": 0,
+    "throughput_req_per_sec": 10593472.831714738,
+    "statistical_confidence": "Very High (1M samples)"
+  }
+]

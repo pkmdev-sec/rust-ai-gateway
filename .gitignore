@@ -1,0 +1,73 @@
+# Rust
+/target/
+**/*.rs.bk
+*.pdb
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Node.js (for integration scripts)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Configuration files with secrets
+config.yaml
+config.json
+secrets.yaml
+
+# Build artifacts
+*.deb
+*.rpm
+*.tar.gz
+*.zip
+
+# Test results
+test-results/
+coverage/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Docker
+.dockerignore
+
+# Kubernetes secrets
+*-secret.yaml
+secrets/
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Local development
+local/
+dev/
