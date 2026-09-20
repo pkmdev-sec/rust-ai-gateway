@@ -1,8 +1,9 @@
+use ai_gateway_router::multimodal::ModelCapabilities;
 use ai_gateway_router::{
-    Router, RouterConfig, RouterContext, StrategyMode, Target, Strategy, Condition,
-    RetryConfig, ExponentialBackoffConfig, GuardrailConfig, GuardrailType, GuardrailAction,
-    GuardrailEngine, ContentModerationGuardrail, PIIDetectionGuardrail, TokenLimitGuardrail,
-    ModelCapabilities, ModalityType, ImageFormat, MultiModalProcessor, ProcessingOptions,
+    Condition, ContentModerationGuardrail, ExponentialBackoffConfig, GuardrailAction,
+    GuardrailConfig, GuardrailEngine, GuardrailType, ImageFormat, ModalityType,
+    MultiModalProcessor, PIIDetectionGuardrail, ProcessingOptions, RetryConfig, Router,
+    RouterConfig, RouterContext, Strategy, StrategyMode, Target, TokenLimitGuardrail,
 };
 use serde_json::json;
 use std::collections::HashMap;
@@ -14,11 +15,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Get API keys from environment
     let openai_key = env::var("OPENAI_API_KEY").unwrap_or_else(|_| "sk-test-openai".to_string());
-    let anthropic_key = env::var("ANTHROPIC_API_KEY").unwrap_or_else(|_| "sk-test-anthropic".to_string());
+    let anthropic_key =
+        env::var("ANTHROPIC_API_KEY").unwrap_or_else(|_| "sk-test-anthropic".to_string());
 
     // Example 1: Enterprise Router with Retries and Guardrails
     println!("=== Enterprise Router with Retries & Guardrails ===");
-    
+
     let enterprise_config = RouterConfig {
         mode: StrategyMode::Conditional,
         targets: vec![
@@ -47,7 +49,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         action: GuardrailAction::Block,
                         settings: {
                             let mut map = HashMap::new();
-                            map.insert("blocked_patterns".to_string(), json!(["harmful", "inappropriate"]));
+                            map.insert(
+                                "blocked_patterns".to_string(),
+                                json!(["harmful", "inappropriate"]),
+                            );
                             map
                         },
                     },
@@ -108,19 +113,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             default_target: Some("production-gpt4".to_string()),
         }),
         global_retry_config: Some(RetryConfig::default()),
-        global_guardrails: Some(vec![
-            GuardrailConfig {
-                name: "global_token_limit".to_string(),
-                enabled: true,
-                guardrail_type: GuardrailType::Input,
-                action: GuardrailAction::Block,
-                settings: {
-                    let mut map = HashMap::new();
-                    map.insert("max_tokens".to_string(), json!(32000));
-                    map
-                },
+        global_guardrails: Some(vec![GuardrailConfig {
+            name: "global_token_limit".to_string(),
+            enabled: true,
+            guardrail_type: GuardrailType::Input,
+            action: GuardrailAction::Block,
+            settings: {
+                let mut map = HashMap::new();
+                map.insert("max_tokens".to_string(), json!(32000));
+                map
             },
-        ]),
+        }]),
         request_timeout_ms: Some(60000), // 1 minute global timeout
         enable_caching: Some(true),
         cache_ttl_seconds: Some(300), // 5 minutes
@@ -130,21 +133,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Test different routing scenarios
     let scenarios = vec![
-        ("High priority text request", RouterContext::new()
-            .with_metadata("priority".to_string(), "high".to_string())
-            .with_param("estimated_tokens".to_string(), json!(1000))),
-        
-        ("Multimodal request", RouterContext::new()
-            .with_metadata("has_images".to_string(), "true".to_string())
-            .with_param("estimated_tokens".to_string(), json!(2000))),
-        
-        ("Large context request", RouterContext::new()
-            .with_metadata("priority".to_string(), "normal".to_string())
-            .with_param("estimated_tokens".to_string(), json!(15000))),
-        
-        ("Standard request", RouterContext::new()
-            .with_metadata("priority".to_string(), "normal".to_string())
-            .with_param("estimated_tokens".to_string(), json!(500))),
+        (
+            "High priority text request",
+            RouterContext::new()
+                .with_metadata("priority".to_string(), "high".to_string())
+                .with_param("estimated_tokens".to_string(), json!(1000)),
+        ),
+        (
+            "Multimodal request",
+            RouterContext::new()
+                .with_metadata("has_images".to_string(), "true".to_string())
+                .with_param("estimated_tokens".to_string(), json!(2000)),
+        ),
+        (
+            "Large context request",
+            RouterContext::new()
+                .with_metadata("priority".to_string(), "normal".to_string())
+                .with_param("estimated_tokens".to_string(), json!(15000)),
+        ),
+        (
+            "Standard request",
+            RouterContext::new()
+                .with_metadata("priority".to_string(), "normal".to_string())
+                .with_param("estimated_tokens".to_string(), json!(500)),
+        ),
     ];
 
     for (description, context) in scenarios {
@@ -154,9 +166,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Example 2: Guardrails Engine Demo
     println!("\n=== Guardrails Engine Demo ===");
-    
+
     let mut guardrail_engine = GuardrailEngine::new();
-    
+
     // Add content moderation
     let content_config = GuardrailConfig {
         name: "content_moderation".to_string(),
@@ -165,7 +177,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         action: GuardrailAction::Block,
         settings: {
             let mut map = HashMap::new();
-            map.insert("blocked_patterns".to_string(), json!(["badword", "spam", "harmful"]));
+            map.insert(
+                "blocked_patterns".to_string(),
+                json!(["badword", "spam", "harmful"]),
+            );
             map
         },
     };
@@ -206,10 +221,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     for input in test_inputs {
         println!("\n🔍 Testing: \"{}\"", input);
         let results = guardrail_engine.check_input(input, &HashMap::new())?;
-        
+
         for result in &results {
             if !result.passed {
-                println!("  ❌ Failed: {} - {}", 
+                println!(
+                    "  ❌ Failed: {} - {}",
                     match result.action {
                         GuardrailAction::Block => "BLOCKED",
                         GuardrailAction::Modify => "MODIFIED",
@@ -235,14 +251,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Example 3: Multi-Modal Processing
     println!("\n=== Multi-Modal Processing Demo ===");
-    
+
     let multimodal_capabilities = ModelCapabilities {
-        supported_modalities: vec![
-            ModalityType::Text,
-            ModalityType::Image,
-            ModalityType::Audio,
-        ],
-        max_image_size: Some(10 * 1024 * 1024), // 10MB
+        supported_modalities: vec![ModalityType::Text, ModalityType::Image, ModalityType::Audio],
+        max_image_size: Some(10 * 1024 * 1024),  // 10MB
         max_audio_duration: Some(5 * 60 * 1000), // 5 minutes
         supported_image_formats: vec![ImageFormat::Jpeg, ImageFormat::Png],
         ..Default::default()
@@ -259,9 +271,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Simulate different content types for routing hints
     let multimodal_scenarios = vec![
         ("Text-only request", vec![ModalityType::Text]),
-        ("Image analysis request", vec![ModalityType::Text, ModalityType::Image]),
+        (
+            "Image analysis request",
+            vec![ModalityType::Text, ModalityType::Image],
+        ),
         ("Audio transcription", vec![ModalityType::Audio]),
-        ("Complex multimodal", vec![ModalityType::Text, ModalityType::Image, ModalityType::Audio]),
+        (
+            "Complex multimodal",
+            vec![ModalityType::Text, ModalityType::Image, ModalityType::Audio],
+        ),
     ];
 
     for (description, modalities) in multimodal_scenarios {
@@ -269,13 +287,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let request = create_mock_multimodal_request(modalities);
         let hints = processor.get_model_routing_hints(&request);
         let estimated_time = processor.estimate_processing_time(&request);
-        
+
         println!("🎭 {}", description);
-        println!("   Primary modality: {}", hints.get("primary_modality").unwrap_or(&"Unknown".to_string()));
-        println!("   Complexity: {}", hints.get("complexity").unwrap_or(&"low".to_string()));
-        println!("   Estimated tokens: {}", hints.get("estimated_tokens").unwrap_or(&"0".to_string()));
+        println!(
+            "   Primary modality: {}",
+            hints
+                .get("primary_modality")
+                .unwrap_or(&"Unknown".to_string())
+        );
+        println!(
+            "   Complexity: {}",
+            hints.get("complexity").unwrap_or(&"low".to_string())
+        );
+        println!(
+            "   Estimated tokens: {}",
+            hints.get("estimated_tokens").unwrap_or(&"0".to_string())
+        );
         println!("   Processing time: {}ms", estimated_time);
-        
+
         if let Some(preferred) = hints.get("preferred_provider") {
             println!("   Preferred provider: {}", preferred);
         }
@@ -283,7 +312,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Example 4: Performance Optimized Router
     println!("\n=== Performance Optimized Router (<1ms target) ===");
-    
+
     let fast_config = RouterConfig {
         mode: StrategyMode::LoadBalance,
         targets: vec![
@@ -294,7 +323,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 api_key: Some(openai_key),
                 metadata: HashMap::new(),
                 retry_config: Some(RetryConfig {
-                    attempts: 1, // Minimal retries for speed
+                    attempts: 1,                // Minimal retries for speed
                     on_status_codes: vec![429], // Only retry rate limits
                     use_retry_after_header: Some(false),
                     exponential_backoff: Some(ExponentialBackoffConfig {
@@ -340,7 +369,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         global_retry_config: None,
         global_guardrails: None,
         request_timeout_ms: Some(5000),
-        enable_caching: Some(true), // Enable caching for speed
+        enable_caching: Some(true),  // Enable caching for speed
         cache_ttl_seconds: Some(60), // Short TTL for fresh responses
     };
 
@@ -350,47 +379,60 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Simulate routing performance test
     println!("🏃‍♂️ Testing routing performance (10 requests):");
     let start = std::time::Instant::now();
-    
+
     for i in 1..=10 {
         let result = fast_router.route(&context)?;
         println!("   Request {}: {} ({})", i, result.name, result.provider);
     }
-    
+
     let elapsed = start.elapsed();
-    println!("⚡ Total time: {:?} ({:.2}ms per request)", elapsed, elapsed.as_millis() as f64 / 10.0);
+    println!(
+        "⚡ Total time: {:?} ({:.2}ms per request)",
+        elapsed,
+        elapsed.as_millis() as f64 / 10.0
+    );
 
     println!("\n🎉 Advanced examples completed!");
     Ok(())
 }
 
 // Helper function to create mock multimodal requests
-fn create_mock_multimodal_request(modalities: Vec<ModalityType>) -> ai_gateway_router::MultiModalRequest {
-    use ai_gateway_router::{MultiModalRequest, MediaContent, MediaData};
-    
-    let contents = modalities.into_iter().map(|modality| {
-        let data = match modality {
-            ModalityType::Text => MediaData::Text { content: "Sample text".to_string() },
-            ModalityType::Image => MediaData::Image {
-                format: ImageFormat::Jpeg,
-                data: vec![0; 1000], // 1KB mock image
-                width: Some(512),
-                height: Some(512),
-            },
-            ModalityType::Audio => MediaData::Audio {
-                format: ai_gateway_router::AudioFormat::Mp3,
-                data: vec![0; 5000], // 5KB mock audio
-                duration_ms: Some(10000), // 10 seconds
-                sample_rate: Some(44100),
-            },
-            _ => MediaData::Text { content: "Mock content".to_string() },
-        };
+fn create_mock_multimodal_request(
+    modalities: Vec<ModalityType>,
+) -> ai_gateway_router::MultiModalRequest {
+    use ai_gateway_router::{MediaContent, MediaData, MultiModalRequest};
 
-        MediaContent {
-            modality,
-            data,
-            metadata: HashMap::new(),
-        }
-    }).collect();
+    let contents = modalities
+        .into_iter()
+        .map(|modality| {
+            let data = match modality {
+                ModalityType::Text => MediaData::Text {
+                    content: "Sample text".to_string(),
+                },
+                ModalityType::Image => MediaData::Image {
+                    format: ImageFormat::Jpeg,
+                    data: vec![0; 1000], // 1KB mock image
+                    width: Some(512),
+                    height: Some(512),
+                },
+                ModalityType::Audio => MediaData::Audio {
+                    format: ai_gateway_router::AudioFormat::Mp3,
+                    data: vec![0; 5000],      // 5KB mock audio
+                    duration_ms: Some(10000), // 10 seconds
+                    sample_rate: Some(44100),
+                },
+                _ => MediaData::Text {
+                    content: "Mock content".to_string(),
+                },
+            };
+
+            MediaContent {
+                modality,
+                data,
+                metadata: HashMap::new(),
+            }
+        })
+        .collect();
 
     MultiModalRequest {
         contents,

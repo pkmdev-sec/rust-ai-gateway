@@ -1,6 +1,6 @@
 use ai_gateway_router::{
-    Router, RouterConfig, RouterContext, StrategyMode, Target, Strategy, Condition,
-    RetryConfig, ExponentialBackoffConfig, GuardrailConfig, GuardrailType, GuardrailAction,
+    Condition, ExponentialBackoffConfig, GuardrailAction, GuardrailConfig, GuardrailType,
+    RetryConfig, Router, RouterConfig, RouterContext, Strategy, StrategyMode, Target,
 };
 use serde_json::json;
 use std::collections::HashMap;
@@ -32,29 +32,25 @@ struct TestScenario {
 }
 
 fn create_test_scenarios() -> Vec<TestScenario> {
-    let openai_key = std::env::var("OPENAI_API_KEY")
-        .expect("OPENAI_API_KEY must be set");
-    let anthropic_key = std::env::var("ANTHROPIC_API_KEY")
-        .expect("ANTHROPIC_API_KEY must be set");
+    let openai_key = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set");
+    let anthropic_key = std::env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY must be set");
 
     vec![
         TestScenario {
             name: "Single Provider Routing".to_string(),
             config: RouterConfig {
                 mode: StrategyMode::Single,
-                targets: vec![
-                    Target {
-                        name: "openai-gpt35".to_string(),
-                        provider: "openai".to_string(),
-                        weight: None,
-                        api_key: Some(openai_key.clone()),
-                        metadata: HashMap::new(),
-                        retry_config: None,
-                        guardrails: None,
-                        model_capabilities: None,
-                        request_timeout_ms: None,
-                    },
-                ],
+                targets: vec![Target {
+                    name: "openai-gpt35".to_string(),
+                    provider: "openai".to_string(),
+                    weight: None,
+                    api_key: Some(openai_key.clone()),
+                    metadata: HashMap::new(),
+                    retry_config: None,
+                    guardrails: None,
+                    model_capabilities: None,
+                    request_timeout_ms: None,
+                }],
                 strategy: None,
                 global_retry_config: None,
                 global_guardrails: None,
@@ -130,14 +126,12 @@ fn create_test_scenarios() -> Vec<TestScenario> {
                     },
                 ],
                 strategy: Some(Strategy {
-                    conditions: vec![
-                        Condition {
-                            query: json!({
-                                "metadata.priority": { "$eq": "high" }
-                            }),
-                            then_target: "smart_model".to_string(),
-                        },
-                    ],
+                    conditions: vec![Condition {
+                        query: json!({
+                            "metadata.priority": { "$eq": "high" }
+                        }),
+                        then_target: "smart_model".to_string(),
+                    }],
                     default_target: Some("fast_model".to_string()),
                 }),
                 global_retry_config: None,
@@ -146,8 +140,7 @@ fn create_test_scenarios() -> Vec<TestScenario> {
                 enable_caching: None,
                 cache_ttl_seconds: None,
             },
-            context: RouterContext::new()
-                .with_metadata("priority".to_string(), "high".to_string()),
+            context: RouterContext::new().with_metadata("priority".to_string(), "high".to_string()),
         },
         TestScenario {
             name: "Complex Conditional Routing".to_string(),
@@ -178,22 +171,20 @@ fn create_test_scenarios() -> Vec<TestScenario> {
                     },
                 ],
                 strategy: Some(Strategy {
-                    conditions: vec![
-                        Condition {
-                            query: json!({
-                                "$or": [
-                                    { "metadata.user_tier": { "$eq": "premium" } },
-                                    {
-                                        "$and": [
-                                            { "metadata.priority": { "$eq": "high" } },
-                                            { "params.token_count": { "$gt": 500 } }
-                                        ]
-                                    }
-                                ]
-                            }),
-                            then_target: "premium_model".to_string(),
-                        },
-                    ],
+                    conditions: vec![Condition {
+                        query: json!({
+                            "$or": [
+                                { "metadata.user_tier": { "$eq": "premium" } },
+                                {
+                                    "$and": [
+                                        { "metadata.priority": { "$eq": "high" } },
+                                        { "params.token_count": { "$gt": 500 } }
+                                    ]
+                                }
+                            ]
+                        }),
+                        then_target: "premium_model".to_string(),
+                    }],
                     default_target: Some("standard_model".to_string()),
                 }),
                 global_retry_config: None,
@@ -270,7 +261,7 @@ async fn benchmark_scenario(scenario: &TestScenario, iterations: usize) -> Perfo
 
     for i in 0..iterations {
         let start = Instant::now();
-        
+
         match router.route(&scenario.context) {
             Ok(_result) => {
                 let latency = start.elapsed();
@@ -289,7 +280,7 @@ async fn benchmark_scenario(scenario: &TestScenario, iterations: usize) -> Perfo
     }
 
     let total_time = overall_start.elapsed();
-    
+
     if latencies.is_empty() {
         return PerformanceResult {
             scenario_name: scenario.name.clone(),
@@ -347,11 +338,31 @@ fn print_results(results: &[PerformanceResult]) {
         println!("   Success Rate: {:.2}%", result.success_rate);
         println!("   Total Time: {:.2}ms", result.total_time_ms);
         println!("   Throughput: {:.2} req/s", result.throughput_req_per_sec);
-        println!("   Routing Latency (avg): {:.2}ns ({:.6}ms)", result.avg_latency_ns, result.avg_latency_ns / 1_000_000.0);
-        println!("   Routing Latency (min): {}ns ({:.6}ms)", result.min_latency_ns, result.min_latency_ns as f64 / 1_000_000.0);
-        println!("   Routing Latency (max): {}ns ({:.6}ms)", result.max_latency_ns, result.max_latency_ns as f64 / 1_000_000.0);
-        println!("   Routing Latency (p95): {}ns ({:.6}ms)", result.p95_latency_ns, result.p95_latency_ns as f64 / 1_000_000.0);
-        println!("   Routing Latency (p99): {}ns ({:.6}ms)", result.p99_latency_ns, result.p99_latency_ns as f64 / 1_000_000.0);
+        println!(
+            "   Routing Latency (avg): {:.2}ns ({:.6}ms)",
+            result.avg_latency_ns,
+            result.avg_latency_ns / 1_000_000.0
+        );
+        println!(
+            "   Routing Latency (min): {}ns ({:.6}ms)",
+            result.min_latency_ns,
+            result.min_latency_ns as f64 / 1_000_000.0
+        );
+        println!(
+            "   Routing Latency (max): {}ns ({:.6}ms)",
+            result.max_latency_ns,
+            result.max_latency_ns as f64 / 1_000_000.0
+        );
+        println!(
+            "   Routing Latency (p95): {}ns ({:.6}ms)",
+            result.p95_latency_ns,
+            result.p95_latency_ns as f64 / 1_000_000.0
+        );
+        println!(
+            "   Routing Latency (p99): {}ns ({:.6}ms)",
+            result.p99_latency_ns,
+            result.p99_latency_ns as f64 / 1_000_000.0
+        );
 
         if result.failed_requests > 0 {
             println!("   ❌ Failed: {}", result.failed_requests);
@@ -361,69 +372,78 @@ fn print_results(results: &[PerformanceResult]) {
 
 async fn run_memory_benchmark() {
     println!("\n🧠 Memory Usage Benchmark");
-    
+
     let scenario = &create_test_scenarios()[1]; // Load balance scenario
     let router = Router::new(scenario.config.clone());
-    
+
     // Measure memory usage during high-throughput routing
     let iterations = 1_000_000;
-    println!("📊 Running {} routing operations to measure memory efficiency", iterations);
-    
+    println!(
+        "📊 Running {} routing operations to measure memory efficiency",
+        iterations
+    );
+
     let start = Instant::now();
     let mut successful = 0;
-    
+
     for _ in 0..iterations {
         if router.route(&scenario.context).is_ok() {
             successful += 1;
         }
     }
-    
+
     let elapsed = start.elapsed();
-    
+
     println!("   Completed: {} operations", successful);
     println!("   Time: {:.2}ms", elapsed.as_millis());
-    println!("   Rate: {:.0} ops/sec", successful as f64 / elapsed.as_secs_f64());
-    println!("   Avg per op: {:.2}ns", elapsed.as_nanos() as f64 / successful as f64);
+    println!(
+        "   Rate: {:.0} ops/sec",
+        successful as f64 / elapsed.as_secs_f64()
+    );
+    println!(
+        "   Avg per op: {:.2}ns",
+        elapsed.as_nanos() as f64 / successful as f64
+    );
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("🚀 Starting Rust AI Gateway Router Performance Tests");
-    
+
     let scenarios = create_test_scenarios();
     let mut all_results = Vec::new();
-    
+
     // Standard benchmark with 100,000 iterations for high precision
     let iterations = 100_000;
-    
+
     for scenario in &scenarios {
         let result = benchmark_scenario(scenario, iterations).await;
         all_results.push(result);
-        
+
         // Brief pause between scenarios
         sleep(Duration::from_millis(100)).await;
     }
-    
+
     print_results(&all_results);
-    
+
     // Additional memory benchmark
     run_memory_benchmark().await;
-    
+
     // Save results to JSON for comparison
     let json_results = serde_json::to_string_pretty(&all_results)?;
     std::fs::write("rust_performance_results.json", json_results)?;
     println!("\n💾 Results saved to rust_performance_results.json");
-    
+
     // Quick comparison summary
     println!("\n📊 QUICK PERFORMANCE SUMMARY");
     println!("{}", "=".repeat(50));
-    
+
     for result in &all_results {
-        println!("{}: {:.2}ns avg routing time", 
-            result.scenario_name, 
-            result.avg_latency_ns
+        println!(
+            "{}: {:.2}ns avg routing time",
+            result.scenario_name, result.avg_latency_ns
         );
     }
-    
+
     Ok(())
 }

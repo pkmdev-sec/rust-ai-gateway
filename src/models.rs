@@ -16,9 +16,9 @@ pub struct ModelDefinition {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModelCapabilities {
-    pub reasoning_score: u8,        // 1-10 scale
-    pub speed_score: u8,           // 1-10 scale  
-    pub cost_efficiency: u8,       // 1-10 scale
+    pub reasoning_score: u8, // 1-10 scale
+    pub speed_score: u8,     // 1-10 scale
+    pub cost_efficiency: u8, // 1-10 scale
     pub context_length: u32,
     pub supports_vision: bool,
     pub supports_function_calling: bool,
@@ -29,8 +29,8 @@ pub struct ModelCapabilities {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModelPricing {
-    pub input_cost_per_1k: f64,    // USD per 1K tokens
-    pub output_cost_per_1k: f64,   // USD per 1K tokens
+    pub input_cost_per_1k: f64,  // USD per 1K tokens
+    pub output_cost_per_1k: f64, // USD per 1K tokens
     pub currency: String,
 }
 
@@ -45,7 +45,7 @@ pub struct ModelLimits {
 pub struct ModelPerformance {
     pub avg_latency_ms: u32,
     pub throughput_tokens_per_sec: u32,
-    pub reliability_score: u8,     // 1-10 scale
+    pub reliability_score: u8, // 1-10 scale
 }
 
 /// Model registry with all supported models
@@ -66,7 +66,7 @@ impl ModelRegistry {
     /// Load all the latest and most powerful models
     fn load_default_models(&mut self) {
         // ===== CLAUDE 4 MODELS (Latest Anthropic - May 2025) =====
-        
+
         // Claude 4 Opus - The most capable model for ultra-complex tasks
         self.add_model(ModelDefinition {
             id: "claude-opus-4-20250514".to_string(),
@@ -374,10 +374,7 @@ impl ModelRegistry {
                 throughput_tokens_per_sec: 70,
                 reliability_score: 8,
             },
-            use_cases: vec![
-                "complex_reasoning".to_string(),
-                "analysis".to_string(),
-            ],
+            use_cases: vec!["complex_reasoning".to_string(), "analysis".to_string()],
         });
     }
 
@@ -414,7 +411,8 @@ impl ModelRegistry {
             model.capabilities.context_length >= requirements.min_context_length
                 && model.capabilities.max_output_tokens >= requirements.min_output_tokens
                 && (!requirements.needs_vision || model.capabilities.supports_vision)
-                && (!requirements.needs_function_calling || model.capabilities.supports_function_calling)
+                && (!requirements.needs_function_calling
+                    || model.capabilities.supports_function_calling)
         });
 
         if candidates.is_empty() {
@@ -436,7 +434,11 @@ impl ModelRegistry {
         scored_models.first().map(|(model, _)| *model)
     }
 
-    fn calculate_model_score(&self, model: &ModelDefinition, requirements: &TaskRequirements) -> f64 {
+    fn calculate_model_score(
+        &self,
+        model: &ModelDefinition,
+        requirements: &TaskRequirements,
+    ) -> f64 {
         let mut score = 0.0;
 
         // Weight factors based on requirements
@@ -482,10 +484,15 @@ impl ModelRegistry {
             needs_vision: false,
             needs_function_calling: true,
             preferred_provider: None,
-            use_cases: vec!["complex_reasoning".to_string(), "code_generation".to_string()],
+            use_cases: vec![
+                "complex_reasoning".to_string(),
+                "code_generation".to_string(),
+            ],
         };
 
-        let mut models: Vec<&ModelDefinition> = self.models.values()
+        let mut models: Vec<&ModelDefinition> = self
+            .models
+            .values()
             .filter(|model| {
                 model.capabilities.reasoning_score >= 8
                     && model.capabilities.context_length >= requirements.min_context_length
@@ -494,7 +501,11 @@ impl ModelRegistry {
             .collect();
 
         // Sort by reasoning capability (best first)
-        models.sort_by(|a, b| b.capabilities.reasoning_score.cmp(&a.capabilities.reasoning_score));
+        models.sort_by(|a, b| {
+            b.capabilities
+                .reasoning_score
+                .cmp(&a.capabilities.reasoning_score)
+        });
         models
     }
 }
@@ -532,10 +543,10 @@ mod tests {
     fn test_model_registry_creation() {
         let registry = ModelRegistry::new();
         assert!(!registry.models.is_empty());
-        
-        // Check that we have Claude 3.5 Sonnet
-        assert!(registry.get_model("claude-3-5-sonnet-20241022").is_some());
-        
+
+        // Check that we have Claude 4 Sonnet
+        assert!(registry.get_model("claude-sonnet-4-20250514").is_some());
+
         // Check that we have GPT-4o
         assert!(registry.get_model("gpt-4o").is_some());
     }
@@ -544,19 +555,19 @@ mod tests {
     fn test_complex_task_models() {
         let registry = ModelRegistry::new();
         let complex_models = registry.get_complex_task_models();
-        
+
         assert!(!complex_models.is_empty());
-        
-        // Should include Claude 3.5 Sonnet and GPT-4o for complex tasks
+
+        // Should include Claude 4 Sonnet and GPT-4o for complex tasks
         let model_ids: Vec<&str> = complex_models.iter().map(|m| m.id.as_str()).collect();
-        assert!(model_ids.contains(&"claude-3-5-sonnet-20241022"));
+        assert!(model_ids.contains(&"claude-sonnet-4-20250514"));
         assert!(model_ids.contains(&"gpt-4o"));
     }
 
     #[test]
     fn test_model_selection() {
         let registry = ModelRegistry::new();
-        
+
         let requirements = TaskRequirements {
             priority: TaskPriority::Quality,
             min_context_length: 100000,
@@ -569,7 +580,7 @@ mod tests {
 
         let selected = registry.select_best_model(&requirements);
         assert!(selected.is_some());
-        
+
         let model = selected.unwrap();
         assert_eq!(model.provider, "anthropic");
         assert!(model.capabilities.reasoning_score >= 8);

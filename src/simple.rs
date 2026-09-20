@@ -7,6 +7,7 @@ use std::collections::HashMap;
 /// # Example
 /// ```rust
 /// use ai_gateway_router::SimpleAIGateway;
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// 
 /// let mut gateway = SimpleAIGateway::new();
 /// 
@@ -17,6 +18,8 @@ use std::collections::HashMap;
 /// // Route a request
 /// let result = gateway.route_request("Hello, world!", None)?;
 /// println!("Using provider: {}", result.provider);
+/// # Ok(())
+/// # }
 /// ```
 #[derive(Debug)]
 pub struct SimpleAIGateway {

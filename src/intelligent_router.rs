@@ -1,5 +1,5 @@
 use crate::{
-    models::{ModelRegistry, TaskRequirements, TaskPriority},
+    models::{ModelRegistry, TaskPriority, TaskRequirements},
     RouterError, RouterResult, Target,
 };
 use serde::{Deserialize, Serialize};
@@ -38,7 +38,7 @@ pub enum FallbackStrategy {
 #[derive(Debug, Clone)]
 pub struct IntelligentRoutingContext {
     pub task_type: TaskType,
-    pub complexity_score: f64,      // 0.0-1.0
+    pub complexity_score: f64, // 0.0-1.0
     pub urgency: Urgency,
     pub budget_constraint: Option<f64>, // Max cost per 1K tokens
     pub content_analysis: ContentAnalysis,
@@ -61,10 +61,10 @@ pub enum TaskType {
 
 #[derive(Debug, Clone)]
 pub enum Urgency {
-    Critical,   // Need fastest response
-    High,       // Balance speed and quality
-    Normal,     // Default routing
-    Low,        // Can use slower but better models
+    Critical, // Need fastest response
+    High,     // Balance speed and quality
+    Normal,   // Default routing
+    Low,      // Can use slower but better models
 }
 
 #[derive(Debug, Clone)]
@@ -158,13 +158,11 @@ impl IntelligentRouter {
         // Rule 3: Fast responses -> GPT-4o-mini or Claude Haiku
         self.routing_rules.push(RoutingRule {
             name: "fast_responses".to_string(),
-            conditions: vec![
-                RoutingCondition {
-                    field: "urgency".to_string(),
-                    operator: "eq".to_string(),
-                    value: serde_json::json!("Critical"),
-                },
-            ],
+            conditions: vec![RoutingCondition {
+                field: "urgency".to_string(),
+                operator: "eq".to_string(),
+                value: serde_json::json!("Critical"),
+            }],
             target_model: "gpt-4o-mini".to_string(),
             priority: 8,
         });
@@ -172,13 +170,11 @@ impl IntelligentRouter {
         // Rule 4: Multimodal tasks -> GPT-4o
         self.routing_rules.push(RoutingRule {
             name: "multimodal_tasks".to_string(),
-            conditions: vec![
-                RoutingCondition {
-                    field: "has_images".to_string(),
-                    operator: "eq".to_string(),
-                    value: serde_json::json!(true),
-                },
-            ],
+            conditions: vec![RoutingCondition {
+                field: "has_images".to_string(),
+                operator: "eq".to_string(),
+                value: serde_json::json!(true),
+            }],
             target_model: "gpt-4o".to_string(),
             priority: 9,
         });
@@ -246,7 +242,8 @@ impl IntelligentRouter {
     }
 
     fn apply_routing_rules(&self, context: &IntelligentRoutingContext) -> Option<String> {
-        let mut matching_rules: Vec<&RoutingRule> = self.routing_rules
+        let mut matching_rules: Vec<&RoutingRule> = self
+            .routing_rules
             .iter()
             .filter(|rule| self.rule_matches(rule, context))
             .collect();
@@ -258,14 +255,18 @@ impl IntelligentRouter {
     }
 
     fn rule_matches(&self, rule: &RoutingRule, context: &IntelligentRoutingContext) -> bool {
-        rule.conditions.iter().all(|condition| {
-            self.evaluate_condition(condition, context)
-        })
+        rule.conditions
+            .iter()
+            .all(|condition| self.evaluate_condition(condition, context))
     }
 
-    fn evaluate_condition(&self, condition: &RoutingCondition, context: &IntelligentRoutingContext) -> bool {
+    fn evaluate_condition(
+        &self,
+        condition: &RoutingCondition,
+        context: &IntelligentRoutingContext,
+    ) -> bool {
         let context_value = self.get_context_field_value(&condition.field, context);
-        
+
         match condition.operator.as_str() {
             "eq" => context_value == condition.value,
             "ne" => context_value != condition.value,
@@ -301,7 +302,11 @@ impl IntelligentRouter {
         }
     }
 
-    fn get_context_field_value(&self, field: &str, context: &IntelligentRoutingContext) -> serde_json::Value {
+    fn get_context_field_value(
+        &self,
+        field: &str,
+        context: &IntelligentRoutingContext,
+    ) -> serde_json::Value {
         match field {
             "task_type" => serde_json::json!(format!("{:?}", context.task_type)),
             "complexity_score" => serde_json::json!(context.complexity_score),
@@ -333,11 +338,18 @@ impl IntelligentRouter {
         };
 
         let use_cases = match context.task_type {
-            TaskType::CodeGeneration => vec!["code_generation".to_string(), "complex_reasoning".to_string()],
-            TaskType::ComplexReasoning => vec!["complex_reasoning".to_string(), "analysis".to_string()],
+            TaskType::CodeGeneration => vec![
+                "code_generation".to_string(),
+                "complex_reasoning".to_string(),
+            ],
+            TaskType::ComplexReasoning => {
+                vec!["complex_reasoning".to_string(), "analysis".to_string()]
+            }
             TaskType::Analysis => vec!["analysis".to_string(), "research".to_string()],
             TaskType::CreativeWriting => vec!["creative_writing".to_string()],
-            TaskType::QuickResponse => vec!["quick_responses".to_string(), "simple_tasks".to_string()],
+            TaskType::QuickResponse => {
+                vec!["quick_responses".to_string(), "simple_tasks".to_string()]
+            }
             TaskType::Research => vec!["research".to_string(), "analysis".to_string()],
             TaskType::Multimodal => vec!["multimodal".to_string()],
             _ => vec!["general_tasks".to_string()],
@@ -345,21 +357,40 @@ impl IntelligentRouter {
 
         TaskRequirements {
             priority,
-            min_context_length: if context.content_analysis.estimated_tokens > 50000 { 100000 } else { 8000 },
-            min_output_tokens: if context.complexity_score > 0.7 { 4000 } else { 1000 },
+            min_context_length: if context.content_analysis.estimated_tokens > 50000 {
+                100000
+            } else {
+                8000
+            },
+            min_output_tokens: if context.complexity_score > 0.7 {
+                4000
+            } else {
+                1000
+            },
             needs_vision: context.content_analysis.has_images,
-            needs_function_calling: matches!(context.task_type, TaskType::CodeGeneration | TaskType::Analysis),
+            needs_function_calling: matches!(
+                context.task_type,
+                TaskType::CodeGeneration | TaskType::Analysis
+            ),
             preferred_provider: context.user_preferences.preferred_provider.clone(),
             use_cases,
         }
     }
 
-    fn apply_fallback_strategy(&self, _context: &IntelligentRoutingContext, _targets: &[Target]) -> RouterResult<String> {
+    fn apply_fallback_strategy(
+        &self,
+        _context: &IntelligentRoutingContext,
+        _targets: &[Target],
+    ) -> RouterResult<String> {
         let models = match self.fallback_strategy {
             FallbackStrategy::BestQuality => {
                 // Return the highest reasoning score models
                 let mut models = self.model_registry.get_all_models();
-                models.sort_by(|a, b| b.capabilities.reasoning_score.cmp(&a.capabilities.reasoning_score));
+                models.sort_by(|a, b| {
+                    b.capabilities
+                        .reasoning_score
+                        .cmp(&a.capabilities.reasoning_score)
+                });
                 models
             }
             FallbackStrategy::FastestResponse => {
@@ -371,15 +402,25 @@ impl IntelligentRouter {
             FallbackStrategy::MostCostEffective => {
                 // Return the most cost-effective models
                 let mut models = self.model_registry.get_all_models();
-                models.sort_by(|a, b| b.capabilities.cost_efficiency.cmp(&a.capabilities.cost_efficiency));
+                models.sort_by(|a, b| {
+                    b.capabilities
+                        .cost_efficiency
+                        .cmp(&a.capabilities.cost_efficiency)
+                });
                 models
             }
             FallbackStrategy::Balanced => {
                 // Return balanced models (good across all metrics)
                 let mut models = self.model_registry.get_all_models();
                 models.sort_by(|a, b| {
-                    let score_a = (a.capabilities.reasoning_score + a.capabilities.speed_score + a.capabilities.cost_efficiency) as f64 / 3.0;
-                    let score_b = (b.capabilities.reasoning_score + b.capabilities.speed_score + b.capabilities.cost_efficiency) as f64 / 3.0;
+                    let score_a = (a.capabilities.reasoning_score
+                        + a.capabilities.speed_score
+                        + a.capabilities.cost_efficiency) as f64
+                        / 3.0;
+                    let score_b = (b.capabilities.reasoning_score
+                        + b.capabilities.speed_score
+                        + b.capabilities.cost_efficiency) as f64
+                        / 3.0;
                     score_b.partial_cmp(&score_a).unwrap()
                 });
                 models
@@ -396,23 +437,43 @@ impl IntelligentRouter {
     /// Analyze content to determine task type and complexity
     pub fn analyze_content(&self, content: &str) -> IntelligentRoutingContext {
         let content_lower = content.to_lowercase();
-        
+
         // Detect task type (more aggressive detection)
-        let task_type = if content_lower.contains("theoretical") || content_lower.contains("quantum") || 
-                          content_lower.contains("mathematical") || content_lower.contains("formal proof") ||
-                          content_lower.contains("computational complexity") || content_lower.contains("cryptographic") ||
-                          content_lower.contains("distributed consensus") || content_lower.contains("algorithm") {
+        let task_type = if content_lower.contains("theoretical")
+            || content_lower.contains("quantum")
+            || content_lower.contains("mathematical")
+            || content_lower.contains("formal proof")
+            || content_lower.contains("computational complexity")
+            || content_lower.contains("cryptographic")
+            || content_lower.contains("distributed consensus")
+            || content_lower.contains("algorithm")
+        {
             TaskType::ComplexReasoning
-        } else if content_lower.contains("rust") || content_lower.contains("cargo") || content_lower.contains("fn ") ||
-                  content_lower.contains("implement") || content_lower.contains("concurrent") ||
-                  content_lower.contains("data structure") || content_lower.contains("performance") {
+        } else if content_lower.contains("rust")
+            || content_lower.contains("cargo")
+            || content_lower.contains("fn ")
+            || content_lower.contains("implement")
+            || content_lower.contains("concurrent")
+            || content_lower.contains("data structure")
+            || content_lower.contains("performance")
+        {
             TaskType::CodeGeneration
-        } else if content_lower.contains("analyze") || content_lower.contains("explain") || content_lower.contains("compare") ||
-                  content_lower.contains("framework") || content_lower.contains("comprehensive") {
+        } else if content_lower.contains("analyze")
+            || content_lower.contains("explain")
+            || content_lower.contains("compare")
+            || content_lower.contains("framework")
+            || content_lower.contains("comprehensive")
+        {
             TaskType::Analysis
-        } else if content_lower.contains("write") || content_lower.contains("create") || content_lower.contains("story") {
+        } else if content_lower.contains("write")
+            || content_lower.contains("create")
+            || content_lower.contains("story")
+        {
             TaskType::CreativeWriting
-        } else if content_lower.contains("research") || content_lower.contains("find") || content_lower.contains("investigate") {
+        } else if content_lower.contains("research")
+            || content_lower.contains("find")
+            || content_lower.contains("investigate")
+        {
             TaskType::Research
         } else if content.len() < 50 {
             TaskType::QuickResponse
@@ -427,10 +488,14 @@ impl IntelligentRouter {
         // Analyze content
         let content_analysis = ContentAnalysis {
             estimated_tokens: (content.len() / 4) as u32, // Rough estimate
-            language: Some("en".to_string()), // Default to English
-            contains_code: content.contains("fn ") || content.contains("impl ") || content.contains("struct "),
+            language: Some("en".to_string()),             // Default to English
+            contains_code: content.contains("fn ")
+                || content.contains("impl ")
+                || content.contains("struct "),
             contains_math: content.contains("=") || content.contains("+") || content.contains("*"),
-            requires_reasoning: content_lower.contains("why") || content_lower.contains("how") || content_lower.contains("explain"),
+            requires_reasoning: content_lower.contains("why")
+                || content_lower.contains("how")
+                || content_lower.contains("explain"),
             has_images: false, // Would need to check for image attachments
         };
 
@@ -452,7 +517,7 @@ impl IntelligentRouter {
     fn calculate_complexity_score(&self, content: &str) -> f64 {
         let mut score: f64 = 0.0;
         let content_lower = content.to_lowercase();
-        
+
         // Base complexity for any substantial content
         if content.len() > 100 {
             score += 0.3; // Start with higher base score
@@ -466,11 +531,30 @@ impl IntelligentRouter {
 
         // High-complexity technical keywords (more aggressive scoring)
         let ultra_complex_keywords = [
-            "quantum", "cryptographic", "distributed", "consensus", "theoretical",
-            "mathematical", "formal proof", "computational complexity", "algorithm",
-            "enterprise", "concurrent", "lock-free", "high-performance", "scalable",
-            "optimization", "architecture", "sophisticated", "advanced", "framework",
-            "comprehensive", "analysis", "research", "investigate", "implement"
+            "quantum",
+            "cryptographic",
+            "distributed",
+            "consensus",
+            "theoretical",
+            "mathematical",
+            "formal proof",
+            "computational complexity",
+            "algorithm",
+            "enterprise",
+            "concurrent",
+            "lock-free",
+            "high-performance",
+            "scalable",
+            "optimization",
+            "architecture",
+            "sophisticated",
+            "advanced",
+            "framework",
+            "comprehensive",
+            "analysis",
+            "research",
+            "investigate",
+            "implement",
         ];
 
         for keyword in &ultra_complex_keywords {
@@ -481,9 +565,21 @@ impl IntelligentRouter {
 
         // Programming/technical indicators
         let technical_keywords = [
-            "rust", "algorithm", "data structure", "performance", "memory",
-            "thread", "async", "concurrent", "parallel", "optimization",
-            "benchmark", "profiling", "debugging", "testing", "deployment"
+            "rust",
+            "algorithm",
+            "data structure",
+            "performance",
+            "memory",
+            "thread",
+            "async",
+            "concurrent",
+            "parallel",
+            "optimization",
+            "benchmark",
+            "profiling",
+            "debugging",
+            "testing",
+            "deployment",
         ];
 
         for keyword in &technical_keywords {
@@ -494,9 +590,23 @@ impl IntelligentRouter {
 
         // Academic/research indicators
         let academic_keywords = [
-            "analyze", "analysis", "research", "study", "investigate", "examine",
-            "compare", "evaluate", "assess", "theoretical", "empirical", "methodology",
-            "framework", "model", "hypothesis", "conclusion", "implications"
+            "analyze",
+            "analysis",
+            "research",
+            "study",
+            "investigate",
+            "examine",
+            "compare",
+            "evaluate",
+            "assess",
+            "theoretical",
+            "empirical",
+            "methodology",
+            "framework",
+            "model",
+            "hypothesis",
+            "conclusion",
+            "implications",
         ];
 
         for keyword in &academic_keywords {
@@ -511,16 +621,30 @@ impl IntelligentRouter {
         }
 
         // Reasoning and explanation indicators
-        if content_lower.contains("why") || content_lower.contains("how") || content_lower.contains("explain") {
+        if content_lower.contains("why")
+            || content_lower.contains("how")
+            || content_lower.contains("explain")
+        {
             score += 0.15;
         }
 
         // Multiple technical domains (interdisciplinary complexity)
         let domains = [
-            "computer science", "mathematics", "physics", "engineering",
-            "cryptography", "security", "networking", "databases", "ai", "ml"
+            "computer science",
+            "mathematics",
+            "physics",
+            "engineering",
+            "cryptography",
+            "security",
+            "networking",
+            "databases",
+            "ai",
+            "ml",
         ];
-        let domain_count = domains.iter().filter(|&domain| content_lower.contains(domain)).count();
+        let domain_count = domains
+            .iter()
+            .filter(|&domain| content_lower.contains(domain))
+            .count();
         if domain_count > 1 {
             score += 0.2 * domain_count as f64;
         }
@@ -559,7 +683,7 @@ mod tests {
     #[test]
     fn test_content_analysis() {
         let router = IntelligentRouter::new();
-        
+
         // Test Rust code detection
         let rust_content = "fn main() { println!('Hello, world!'); }";
         let context = router.analyze_content(rust_content);
@@ -567,7 +691,7 @@ mod tests {
         assert!(context.content_analysis.contains_code);
 
         // Test analysis task detection
-        let analysis_content = "Please analyze the performance implications of this approach";
+        let analysis_content = "Please analyze the trade-offs of this approach";
         let context = router.analyze_content(analysis_content);
         assert!(matches!(context.task_type, TaskType::Analysis));
     }
@@ -575,7 +699,7 @@ mod tests {
     #[test]
     fn test_complexity_scoring() {
         let router = IntelligentRouter::new();
-        
+
         let simple_content = "Hello";
         let simple_context = router.analyze_content(simple_content);
         assert!(simple_context.complexity_score < 0.3);
@@ -589,9 +713,9 @@ mod tests {
     fn test_model_recommendations() {
         let router = IntelligentRouter::new();
         let recommended = router.get_recommended_models_for_complex_tasks();
-        
+
         assert!(!recommended.is_empty());
-        assert!(recommended.contains(&"claude-3-5-sonnet-20241022".to_string()));
+        assert!(recommended.contains(&"claude-sonnet-4-20250514".to_string()));
         assert!(recommended.contains(&"gpt-4o".to_string()));
     }
 }

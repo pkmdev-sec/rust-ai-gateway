@@ -1,4 +1,6 @@
-use ai_gateway_router::{Router, RouterConfig, RouterContext, StrategyMode, Target, Strategy, Condition};
+use ai_gateway_router::{
+    Condition, Router, RouterConfig, RouterContext, Strategy, StrategyMode, Target,
+};
 use serde_json::json;
 use std::collections::HashMap;
 
@@ -14,29 +16,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         enable_caching: None,
         cache_ttl_seconds: None,
         mode: StrategyMode::Single,
-        targets: vec![
-            Target {
-                retry_config: None,
-                guardrails: None,
-                model_capabilities: None,
-                request_timeout_ms: None,
-                name: "openai-gpt4".to_string(),
-                provider: "openai".to_string(),
-                weight: None,
-                api_key: Some("sk-your-openai-key".to_string()),
-                metadata: HashMap::new(),
-                retry_config: None,
-                guardrails: None,
-                model_capabilities: None,
-                request_timeout_ms: None,
-            },
-        ],
+        targets: vec![Target {
+            name: "openai-gpt4".to_string(),
+            provider: "openai".to_string(),
+            weight: None,
+            api_key: Some("sk-your-openai-key".to_string()),
+            metadata: HashMap::new(),
+            retry_config: None,
+            guardrails: None,
+            model_capabilities: None,
+            request_timeout_ms: None,
+        }],
         strategy: None,
-        global_retry_config: None,
-        global_guardrails: None,
-        request_timeout_ms: None,
-        enable_caching: None,
-        cache_ttl_seconds: None,
     };
 
     let router = Router::new(single_config);
@@ -93,7 +84,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         println!("Selected: {} ({})", result.name, result.provider);
     }
-    println!("Distribution: OpenAI: {}, Anthropic: {}", openai_count, anthropic_count);
+    println!(
+        "Distribution: OpenAI: {}, Anthropic: {}",
+        openai_count, anthropic_count
+    );
 
     // Example 3: Conditional Routing
     println!("\n=== Conditional Routing Example ===");
@@ -171,10 +165,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Test different scenarios
     let scenarios = vec![
-        ("High priority request", RouterContext::new().with_metadata("priority".to_string(), "high".to_string())),
-        ("Coding request", RouterContext::new().with_metadata("task_type".to_string(), "coding".to_string())),
-        ("Complex request", RouterContext::new().with_param("token_count".to_string(), json!(1500))),
-        ("Default request", RouterContext::new().with_metadata("priority".to_string(), "low".to_string())),
+        (
+            "High priority request",
+            RouterContext::new().with_metadata("priority".to_string(), "high".to_string()),
+        ),
+        (
+            "Coding request",
+            RouterContext::new().with_metadata("task_type".to_string(), "coding".to_string()),
+        ),
+        (
+            "Complex request",
+            RouterContext::new().with_param("token_count".to_string(), json!(1500)),
+        ),
+        (
+            "Default request",
+            RouterContext::new().with_metadata("priority".to_string(), "low".to_string()),
+        ),
     ];
 
     for (description, context) in scenarios {
@@ -240,14 +246,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let router = Router::new(complex_config);
 
     let complex_scenarios = vec![
-        ("Premium user", RouterContext::new().with_metadata("user_tier".to_string(), "premium".to_string())),
-        ("High priority + large tokens", RouterContext::new()
-            .with_metadata("priority".to_string(), "high".to_string())
-            .with_param("token_count".to_string(), json!(800))),
-        ("High priority + small tokens", RouterContext::new()
-            .with_metadata("priority".to_string(), "high".to_string())
-            .with_param("token_count".to_string(), json!(200))),
-        ("Regular user", RouterContext::new().with_metadata("user_tier".to_string(), "free".to_string())),
+        (
+            "Premium user",
+            RouterContext::new().with_metadata("user_tier".to_string(), "premium".to_string()),
+        ),
+        (
+            "High priority + large tokens",
+            RouterContext::new()
+                .with_metadata("priority".to_string(), "high".to_string())
+                .with_param("token_count".to_string(), json!(800)),
+        ),
+        (
+            "High priority + small tokens",
+            RouterContext::new()
+                .with_metadata("priority".to_string(), "high".to_string())
+                .with_param("token_count".to_string(), json!(200)),
+        ),
+        (
+            "Regular user",
+            RouterContext::new().with_metadata("user_tier".to_string(), "free".to_string()),
+        ),
     ];
 
     for (description, context) in complex_scenarios {
